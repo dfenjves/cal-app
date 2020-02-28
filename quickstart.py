@@ -10,15 +10,44 @@ from google.auth.transport.requests import Request
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
+#converts a string in to a datetime object
 def convert_str_to_datetime(date_info):
     datetime_obj = datetime.datetime.strptime(date_info, '%Y-%m-%dT%H:%M:%S%z')
     return datetime_obj
 
+#checks to make sure the string is formatted correctly to ignore full day events without times
+def is_valid_date_time_string(datetimestring):
+    try:
+        datetime.datetime.strptime(datetimestring, '%Y-%m-%dT%H:%M:%S%z')
+        is_valid = True
+    except ValueError:
+        is_valid = False
+    return is_valid
+
+#converts a datetime object in to a date string "Monday, February 3"
 def convert_datetime_to_date(date_info):
     return date_info.strftime("%A, %B %d")
 
+#converts a datetime object in to a time string 4:15 PM"
+
 def convert_datetime_to_time(date_info):
     return date_info.strftime("%I:%M %p")
+
+def prettify_event(event):
+    date = convert_datetime_to_date(event["start_time"])
+    start_time_formatted = convert_datetime_to_time(event["start_time"])
+    end_time_formatted = convert_datetime_to_time(event["end_time"])
+    open_slot_formatted = {"date": date, "start_time": start_time_formatted, "end_time": end_time_formatted}
+    return open_slot_formatted
+
+def check_if_valid(event):
+    if (event['duration'].seconds > 900) and (event['duration'].seconds < 28800):
+        return True
+    return False
+# Ensure that available spots don't go across days
+# Set a Max duration (8 hours?) - DONE
+# Set a minimum duration - DONE
+
 
 # datetime_obj = datetime.datetime.now()
 # print(datetime_obj)
@@ -54,7 +83,7 @@ def main():
     # print(now)
     print('Getting the upcoming 20 events')
     events_result = service.events().list(calendarId='primary', timeMin=now,
-                                        maxResults=20, singleEvents=True,
+                                        maxResults=40, singleEvents=True,
                                         orderBy='startTime').execute()
     events = events_result.get('items', [])
     open_times = []
@@ -63,20 +92,20 @@ def main():
     if not events:
         print('No upcoming events found.')
     for i in range(len(events)-1):
-        start = events[i]['start'].get('dateTime', events[i]['start'].get('date'))
-        end = convert_str_to_datetime(events[i]['end'].get('dateTime', events[i]['end'].get('date')))
-        start_of_next = convert_str_to_datetime(events[i+1]['start'].get('dateTime', events[i+1]['start'].get('date')))
+        # start = events[i]['start'].get('dateTime', events[i]['start'].get('date'))
+        if is_valid_date_time_string(events[i]['end'].get('dateTime', events[i]['end'].get('date'))) and is_valid_date_time_string(events[i+1]['start'].get('dateTime', events[i+1]['start'].get('date'))):
+            end = convert_str_to_datetime(events[i]['end'].get('dateTime', events[i]['end'].get('date')))
+            start_of_next = convert_str_to_datetime(events[i+1]['start'].get('dateTime', events[i+1]['start'].get('date')))
 
-        # print(start, events[i]['summary'])
-        duration = start_of_next - end
-        open_slot = {"start_time": end,"end_time": start_of_next, "duration": duration}
-        date = convert_datetime_to_date(open_slot["start_time"])
-        start_time_formatted = convert_datetime_to_time(open_slot["start_time"])
-        end_time_formatted = convert_datetime_to_time(open_slot["end_time"])
-        open_slot_formatted = {"date": date, "start_time": start_time_formatted, "end_time": end_time_formatted}
-        print(open_slot["duration"])
-        print(f'{open_slot_formatted["date"]} {open_slot_formatted["start_time"]} - {open_slot_formatted["end_time"]}')
+            # print(start, events[i]['summary'])
+            duration = start_of_next - end
+            open_slot = {"start_time": end,"end_time": start_of_next, "duration": duration}
+            open_slot_formatted = prettify_event(open_slot)
+            # print(f'{open_slot_formatted["date"]} {open_slot_formatted["start_time"]} - {open_slot_formatted["end_time"]}')
+            if check_if_valid(open_slot):
+                open_times.append(open_slot_formatted)
 
+    print(open_times)
 
 
 
