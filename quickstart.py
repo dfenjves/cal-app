@@ -44,6 +44,11 @@ def check_if_valid(event):
     if (event['duration'].seconds > 900) and (event['duration'].seconds < 28800):
         return True
     return False
+
+def display_formatted_list(events_dict):
+    for event in events_dict:
+        print(f'{event["date"]} {event["start_time"]} - {event["end_time"]}')
+
 # Ensure that available spots don't go across days
 # Set a Max duration (8 hours?) - DONE
 # Set a minimum duration - DONE
@@ -81,7 +86,7 @@ def main():
     # Call the Calendar API
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
     # print(now)
-    print('Getting the upcoming 20 events')
+    print("Looking for your free appointment times...")
     events_result = service.events().list(calendarId='primary', timeMin=now,
                                         maxResults=40, singleEvents=True,
                                         orderBy='startTime').execute()
@@ -101,11 +106,10 @@ def main():
             duration = start_of_next - end
             open_slot = {"start_time": end,"end_time": start_of_next, "duration": duration}
             open_slot_formatted = prettify_event(open_slot)
-            # print(f'{open_slot_formatted["date"]} {open_slot_formatted["start_time"]} - {open_slot_formatted["end_time"]}')
             if check_if_valid(open_slot):
                 open_times.append(open_slot_formatted)
 
-    print(open_times)
+    display_formatted_list(open_times)
 
 
 
