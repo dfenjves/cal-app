@@ -47,7 +47,7 @@ def check_if_valid(event):
 
 def display_formatted_list(events_dict):
     for event in events_dict:
-        print(f'{event["date"]} {event["start_time"]} - {event["end_time"]}')
+        print(f'{event["date"]}, {event["start_time"]} - {event["end_time"]}')
 
 # Ensure that available spots don't go across days
 # Set a Max duration (8 hours?) - DONE
